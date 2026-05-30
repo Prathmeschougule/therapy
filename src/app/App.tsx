@@ -29,11 +29,13 @@ export default function App() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
  const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
 
   setIsLoading(true);
+  setSubmitError("");
 
   try {
     await emailjs.send(
@@ -75,7 +77,16 @@ export default function App() {
 
   } catch (error) {
     console.error("Email failed:", error);
-    alert("Something went wrong!");
+    const emailError = error as { status?: number; text?: string };
+    const needsReconnect =
+      emailError.status === 412 ||
+      emailError.text?.toLowerCase().includes("invalid grant");
+
+    setSubmitError(
+      needsReconnect
+        ? "Message could not be sent because the Gmail account connected to EmailJS needs to be reconnected. Please try again later."
+        : "Something went wrong while sending your message. Please try again."
+    );
   }
 
   setIsLoading(false);
@@ -461,9 +472,9 @@ export default function App() {
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 md:gap-3">
                   {[
-                    { value: "500-800", label: "$500 - $800" },
-                    { value: "800-1000", label: "$800 - $1000" },
-                    { value: "1000-1200", label: "$1000 - $1200" },
+                    { value: "500-800", label: "₹500 - ₹800" },
+                    { value: "800-1000", label: "₹800 - ₹1000" },
+                    { value: "1000-1200", label: "₹1000 - ₹1200" },
                   ].map((option) => (
                     <button
                       key={option.value}
@@ -500,13 +511,23 @@ export default function App() {
               </div>
 
               {/* Submit Button */}
+              {submitError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                >
+                  {submitError}
+                </div>
+              )}
+
               <motion.button
                 type="submit"
+                disabled={isLoading}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full py-3.5 md:py-4 text-sm md:text-base bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all"
+                className="w-full py-3.5 md:py-4 text-sm md:text-base bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-xl shadow-lg hover:shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-70"
               >
-                Submit Application
+                {isLoading ? "Sending..." : "Submit Application"}
               </motion.button>
             </form>
           </motion.div>
